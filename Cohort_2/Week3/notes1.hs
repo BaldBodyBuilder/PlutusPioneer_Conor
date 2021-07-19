@@ -84,7 +84,81 @@ One check in the validation phase is the checking if the slot range is valid
 by default a script uses the infinite slot range, one that covers all slots until the end of time
 but we do have the option to set different slot ranges 
 -}
+
 {-
 Slots
+Plutus.V1.Ledger.Slot
+
+-- | The slot number. This is a good proxy for time, since on the Cardano blockchain
+-- slots pass at a constant rate.
+newtype Slot = Slot { getSlot :: Integer }
+   deriving stock (Haskell.Eq, Haskell.Ord, Show, Generic)
+   deriving anyclass (FromJSON, FromJSONKey, ToJSON, ToJSONKey, NFData)
+   deriving newtype (Haskell.Num, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, Enum, Eq, Ord, Real, Integral, Serialise, Hashable, PlutusTx.IsData)
+
+
+Can use the num class so we could write "Slot 17" or {getSlot=17}
+definition of Slot range is:
+-- | An 'Interval' of 'Slot's.
+type SlotRange = Interval Slot
+
+What is interval though?
+--   The interval can also be unbounded on either side.
+data Interval a = Interval { ivFrom :: LowerBound a, ivTo :: UpperBound a }
+   deriving stock (Haskell.Eq, Haskell.Ord, Show, Generic)
+   deriving anyclass (FromJSON, ToJSON, Serialise, Hashable, NFData)
+
+Bounds are inclusive, could specify if the lower is beginning of time and the upper is infinity
+
+Upper and lower are inclusive:
+interval :: a -> a -> Interval a
+interval s s' = Interval (lowerBound s) (upperBound s')
+
+Singleton helper
+singleton :: a -> Interval a 
+singleton s = interval s s
+
+We haave 'from' which constructs an 'Interval' starting from a given slot and extending to the end of time.
+    from :: a -> Interval a
+    from s = Interval (lowerbound s) (UpperBound PosInf True)
+gensis block up to and including the given slot
+    to :: a -> Interval a
+    to s = Interval (LowerBound NegInf True) (upperBound s)
+From beginning of time to eternity
+    always :: Interval a
+    always = Interval (LowerBound NegInf True) (UpperBound PosInf True)
+and the opposite 'never' which contains no slots
+    never :: Interval a
+    never = Interval (LowerBound PosInf True) (UpperBound NegInf True)
+
+Helpers for working with intervals
+
+member function checks whether a value is contained within an Interval
+    member :: Ord a => a -> Interval a -> Bool
+    member a i = i `contains` singleton a
+
+Overlaps function checks whether two intervals overlap,that is, whether there is a value that is a member of both intervals
+    overlaps :: Ord a => Interval a -> Interval a -> Bool
+    overlaps l r = isEmpty ( l `intersection` r)
+
+Intersection functions deteremines the largest interval that is contained in both the given intervals 
+    hull :: Ord a => Interval a -> Interval a -> Interval a
+    hull (Interval l1 h1) (Interval l2 h2) = Interval (min l1 l2) (max h1 h2)
+
+Contains takes two intervals and determines if the second interval is completely contained within the first
+contains :: Ord a => Interval a -> Interval a -> Bool
+contains (Interval l1 h1) (Interval l2 h2) = l1 <= l2 && h2 <= h1
+
+And before or after functions to determine slot time location
+before :: Ord a => a -> Interval a -> Bool
+before h (Interval f _) = lowerBound h < f
+
+after :: Ord a => a -> Interval a -> Bool
+after h (Interval _ t) = upperBound h > t
+
 -}
 
+{-
+Playing in the repl
+
+-}
