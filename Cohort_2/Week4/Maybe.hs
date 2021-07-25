@@ -1,25 +1,26 @@
 module Test where
 
 import Text.Read (readMaybe)
+import Monads
 
 foo :: String -> String -> String -> Maybe Int
 foo x y z = case readMaybe x of
+    Nothing -> Nothing
+    Just k  -> case readMaybe y of
+        Nothing -> Nothing
+        Just l  -> case readMaybe z of
             Nothing -> Nothing
-            Just k -> case readMaybe y of
-                Nothing -> Nothing
-                Just l -> case readMaybe z of
-                        Nothing -> Nothing
-                        Just m -> Just (k + l + m)
+            Just m  -> Just (k + l + m)
 
-bindMaybe :: Maybe a -> (a -> Maybe b ) -> Maybe b
-bindMaybe Nothing _ = Nothing
+bindMaybe :: Maybe a -> (a -> Maybe b) -> Maybe b
+bindMaybe Nothing  _ = Nothing
 bindMaybe (Just x) f = f x
 
 foo' :: String -> String -> String -> Maybe Int
 foo' x y z = readMaybe x `bindMaybe` \k ->
              readMaybe y `bindMaybe` \l ->
              readMaybe z `bindMaybe` \m ->
-                 Just (k + l + m)
+             Just (k + l + m)
 
---foo'' :: String -> String -> String -> Maybe Int
---foo'' x y z = threeInts (readMaybe x) (readMaybe y) (readMaybe z)
+foo'' :: String -> String -> String -> Maybe Int
+foo'' x y z = threeInts (readMaybe x) (readMaybe y) (readMaybe z)
